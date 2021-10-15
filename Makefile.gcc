@@ -1,0 +1,8 @@
+all: wsd wse
+
+wsd: src/wsd.c
+	gcc -Wall -O3 -march=native src/wsd.c -o wsd
+
+wse: src/wse.c
+	gcc -Wall -O3 -march=native src/wse.c -o wse
+

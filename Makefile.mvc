@@ -1,0 +1,5 @@
+wsd.exe: src\wsd.c
+	cl -O2 -favor:INTEL64 -Qpar src\wsd.c -Fe:wsd.exe
+
+wse.exe: src\wse.c
+	cl -O2 -favor:INTEL64 -Qpar src\wse.c -Fe:wse.exe
