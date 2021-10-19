@@ -13,7 +13,7 @@
 static uint8_t
 ws_to_half_nibble(uint8_t ws)
 {
-    return ((ws >> 1) & 3) | (ws >> 4) | (ws >> 5);
+    return ((7 * ws) >> 6) + ((ws & 4) >> 2);
 }
 
 static uint8_t
