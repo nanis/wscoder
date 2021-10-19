@@ -6,6 +6,8 @@ Bleach/unbleach files
 
 "[A Tale Of Two Optimisations][1]" by [Greg Foletta][2].
 
+See also [my blog post][6] about my thought process.
+
 # Performance
 
 > on \[Greg's\] Intel [i7-8650U][5] laptop, running over a file that's cached in
@@ -55,3 +57,5 @@ This reads 1,024 MiB and writes 256 MiB to `NUL` for a throughput of approximate
 [4]: https://ark.intel.com/content/www/us/en/ark/products/39312/intel-core2-duo-processor-t9900-6m-cache-3-06-ghz-1066-mhz-fsb.html
 
 [5]: https://ark.intel.com/content/www/us/en/ark/products/124968/intel-core-i78650u-processor-8m-cache-up-to-4-20-ghz.html
+
+[6]: https://www.nu42.com/2021/10/another-optimization-tale.html
