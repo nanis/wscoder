@@ -10,10 +10,29 @@
 #define INPUT_BUFSIZE (4 * 1024 * 1024)
 #define OUTPUT_BUFSIZE (INPUT_BUFSIZE / 4)
 
+#if 0
+
+We want a function that maps:
+
+             x |  y
+-------------------
+ 9 (0000_1001) | 0
+10 (0000_1010) | 1
+13 (0000_1101) | 2
+32 (0010_0000) | 3
+
+In integer arithmetic, x/10 gets us there but we have to pad the result when x
+== 13. Division is costly, so instead of dividing by 10, we multiply by
+ceil(64/10) = 7 and look at how many 64s are in the result. Using 7 (instead
+of, e.g., 13, 26, or 0x1999999a) means we can do it all with uint8_t values with
+no up/downcasting. Note 13 is the only x value for which !!(ws & 4) is 1.
+
+#endif
+
 static uint8_t
 ws_to_half_nibble(uint8_t ws)
 {
-    return ((ws >> 1) & 3) | (ws >> 4) | (ws >> 5);
+    return ((7 * ws) >> 6) + !!(ws & 4);
 }
 
 static uint8_t
