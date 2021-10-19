@@ -12,6 +12,23 @@
 
 #define BASE_CHR ((uint8_t) '\t')
 
+#if 0
+
+We want a function that maps:
+
+     x |   y
+--------------
+0 (00) |  9
+1 (01) | 10
+2 (10) | 13
+3 (11) | 32
+
+Given 0 -> 9, we need an intercept term. 1 and 2 are easily mapped to 1 and 4,
+respectively, by squaring. But, 3² = 9 which means we need to add 14 only
+when x == 3 without using a conditional.
+
+#endif
+
 static uint8_t
 half_nibble_to_ws(uint8_t c)
 {
