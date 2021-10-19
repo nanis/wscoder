@@ -10,22 +10,21 @@
 #define INPUT_BUFSIZE (1 * 1024 * 1024)
 #define OUTPUT_BUFSIZE (4 * INPUT_BUFSIZE)
 
+#define BASE_CHR ((uint8_t) '\t')
+
 static uint8_t
-half_nibble_to_ws(uint8_t b)
+half_nibble_to_ws(uint8_t c)
 {
-    const uint8_t b0 = b & 1;
-    const uint8_t b1 = b & 2;
-    const uint8_t b3 = (b0 & (b1 >> 1));
-    return '\t' + b0 + 2 * b1 + 2 * b3 + 16 * b3;
+    return (c * c) + 14 * (c & (c >> 1)) + BASE_CHR;
 }
 
 static void
-ws_encode(uint8_t c, uint8_t* out)
+ws_encode(uint8_t c, uint8_t * restrict out)
 {
-    out[0] = half_nibble_to_ws(c >> 6);
-    out[1] = half_nibble_to_ws(c >> 4);
-    out[2] = half_nibble_to_ws(c >> 2);
-    out[3] = half_nibble_to_ws(c);
+    out[0] = half_nibble_to_ws((c >> 6) & 3);
+    out[1] = half_nibble_to_ws((c >> 4) & 3);
+    out[2] = half_nibble_to_ws((c >> 2) & 3);
+    out[3] = half_nibble_to_ws(c & 3);
 }
 
 static void*
