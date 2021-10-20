@@ -8,30 +8,23 @@
 #include <io.h>
 #endif
 
-constexpr size_t DECODED_BUFSIZE = 1 * 1024 * 1024;
-constexpr size_t ENCODED_BUFSIZE = 4 * DECODED_BUFSIZE;
-constexpr size_t NUM_THREADS = 2;
-constexpr uint8_t BASE_CHR = static_cast<uint8_t>('\t');
+#include "ws.hpp"
 
-#if 0
+// We want a function that maps:
 
-We want a function that maps:
+//      x |   y
+// --------------
+// 0 (00) |  9
+// 1 (01) | 10
+// 2 (10) | 13
+// 3 (11) | 32
 
-     x |   y
---------------
-0 (00) |  9
-1 (01) | 10
-2 (10) | 13
-3 (11) | 32
-
-Given 0 -> 9, we need an intercept term. 0, 1, and 2 are easily mapped to 9 +
-0² = 9, 9 + 1² = 10, and 9 + 2² = 13, respectively. But, 3 maps to 9 + 3² = 18,
-which means we need to add 14 only when x == 3. We'd like to do this without
-using a conditional. Since bits 0 and 1 are both set only when x == 3,
-(c & (c >> 1)) only evaluates to 1 in that case and gives us a way to
-map 3 to 32.
-
-#endif
+// Given 0 -> 9, we need an intercept term. 0, 1, and 2 are easily mapped to 9
+// + 0² = 9, 9 + 1² = 10, and 9 + 2² = 13, respectively. But, 3 maps to 9 + 3²
+// = 18, which means we need to add 14 only when x == 3. We'd like to do this
+// without using a conditional. Since bits 0 and 1 are both set only when x ==
+// 3, (c & (c >> 1)) only evaluates to 1 in that case and gives us a way to map
+// 3 to 32.
 
 // Caller is responsible for ensuring 0 <= c <= 3
 static uint8_t
@@ -71,12 +64,12 @@ alloc_with_fail(size_t sz, const char* purpose)
 
 static void
 encode_buffer_interleaved(
-        const std::uint8_t * const bufin,
-        std::uint8_t * bufout,
+        const uint8_t * const bufin,
+        uint8_t * bufout,
         const size_t limit
         )
 {
-    for (size_t i = 0; i < limit; i += 2) {
+    for (size_t i = 0; i < limit; i += NUM_THREADS) {
         ws_encode(bufin[i], bufout + 4 * i);
     }
 }
@@ -94,13 +87,13 @@ encode_stream(FILE* fin, FILE* fout)
     size_t n;
 
     while ((n = fread(bufin, 1, DECODED_BUFSIZE, fin))) {
-        for (auto i = 0; i < NUM_THREADS; ++i) {
+        for (size_t i = 0; i < NUM_THREADS; ++i) {
             encoders[i] = std::thread(
               encode_buffer_interleaved, bufin + i, bufout + 4 * i, n);
         }
 
-        for (size_t i = 0; i < NUM_THREADS; ++i) {
-            encoders[i].join();
+        for (auto& encoder : encoders) {
+            encoder.join();
         }
 
         if (fout) {
