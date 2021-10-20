@@ -1,8 +1,8 @@
 all: wsd wse
 
 wsd: src/wsd.cpp src/ws.hpp
-	g++ -Wall -pedantic -O3 -std=c++11 -march=native $< -o $@
+	g++ -DWS_NUM_THREADS=$(WS_NUM_THREADS) -Wall -pedantic -O3 -std=c++11 -march=native $< -o $@
 
 wse: src/wse.cpp src/ws.hpp
-	g++ -Wall -pedantic -O3 -std=c++11 -march=native $< -o $@
+	g++ -DWS_NUM_THREADS=$(WS_NUM_THREADS) -Wall -pedantic -O3 -std=c++11 -march=native $< -o $@
 

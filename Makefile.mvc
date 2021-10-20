@@ -1,5 +1,5 @@
 wsd.exe: src\wsd.cpp src\ws.hpp
-	cl -DNRCPU=$(NUMBER_OF_PROCESSORS) -std:c++14 -O2 -favor:INTEL64 -Qpar src\wsd.cpp -Fe:$@
+	cl -DWS_NUM_THREADS=$(WS_NUM_THREADS) -std:c++14 -O2 -favor:INTEL64 -Qpar src\wsd.cpp -Fe:$@
 
 wse.exe: src\wse.cpp src\ws.hpp
-	cl -DNRCPU=$(NUMBER_OF_PROCESSORS) -std:c++14 -O2 -favor:INTEL64 -Qpar src\wse.cpp -Fe:$@
+	cl -DWS_NUM_THREADS=$(WS_NUM_THREADS) -std:c++14 -O2 -favor:INTEL64 -Qpar src\wse.cpp -Fe:$@
