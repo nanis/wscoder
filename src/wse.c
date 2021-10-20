@@ -1,6 +1,11 @@
+#ifdef __STDC_NO_THREADS__
+#error Need support for C11 threading https://en.cppreference.com/w/c/thread
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -10,7 +15,14 @@
 #define INPUT_BUFSIZE (1 * 1024 * 1024)
 #define OUTPUT_BUFSIZE (4 * INPUT_BUFSIZE)
 
-#define BASE_CHR ((uint8_t) '\t')
+#define BASE_CHR ((uint8_t)'\t')
+
+struct encoder_arg
+{
+    uint8_t* bufin;
+    uint8_t* bufout;
+    size_t limit;
+}
 
 #if 0
 
@@ -69,7 +81,16 @@ alloc_with_fail(size_t sz, const char* purpose)
 }
 
 static void
-encode_stream(FILE* fin, FILE* fout)
+encode_buffer_interleaved(void *arg)
+{
+    const struct encoder_arg *argp = arg;
+
+    for (size_t i = 0; i < argp.limit; i += 2) {
+        ws_encode(argp.bufin[i], argp.bufout + 4 * i);
+    }
+}
+
+static void encode_stream(FILE* fin, FILE* fout)
 {
     uint8_t* bufin = alloc_with_fail(INPUT_BUFSIZE, "input buffer");
     uint8_t* bufout = alloc_with_fail(OUTPUT_BUFSIZE, "output buffer");
@@ -77,8 +98,30 @@ encode_stream(FILE* fin, FILE* fout)
     size_t n;
 
     while ((n = fread(bufin, 1, INPUT_BUFSIZE, fin))) {
-        for (size_t i = 0; i < n; ++i) {
-            ws_encode(bufin[i], bufout + 4 * i);
+        struct encoder_arg args[] {
+            { bufin, bufout, n },
+            { bufin + 1, bufout + 4, n },
+        };
+
+        thrd_t encoder_threads[sizeof(args)/sizeof(args[0])];
+
+        for (size_t i = 0; i < sizeof(args)/sizeof(args[0]); ++i) {
+            int status = thread_create(
+              encoder_threads + i, encode_buffer_interleaved, args + i);
+            if (status != thrd_success) {
+                fprintf(stderr, "Failed to create thread %zu\n", i);
+                perror("Error creating thread");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        for (size_t i = 0; i < sizeof(args) / sizeof(args[0]); ++i) {
+            int status = thread_join(threads[i], NULL);
+            if (status != thrd_success) {
+                fprintf(stderr, "Failed to join thread %zu\n", i);
+                perror("Error joining thread");
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (fout) {
