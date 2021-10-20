@@ -23,20 +23,30 @@ We want a function that maps:
 2 (10) | 13
 3 (11) | 32
 
-Given 0 -> 9, we need an intercept term. 1 and 2 are easily mapped to 1 and 4,
-respectively, by squaring. But, 3² = 9 which means we need to add 14 only
-when x == 3 without using a conditional.
+Given 0 -> 9, we need an intercept term. 0, 1, and 2 are easily mapped to 9 +
+0² = 9, 9 + 1² = 10, and 9 + 2² = 13, respectively. But, 3 maps to 9 + 3² = 18,
+which means we need to add 14 only when x == 3. We'd like to do this without
+using a conditional. Since bits 0 and 1 are both set only when x == 3,
+(c & (c >> 1)) only evaluates to 1 in that case and gives us a way to
+map 3 to 32.
 
 #endif
 
+// Caller is responsible for ensuring 0 <= c <= 3
 static uint8_t
 half_nibble_to_ws(uint8_t c)
 {
     return (c * c) + 14 * (c & (c >> 1)) + BASE_CHR;
 }
 
+// I went big endian (highest half nibble first) without thinking much
+// about it. The choice should not matter performance-wise, but the decoder
+// needs to do the same. Alternatively, we can add a header to encoded files
+// to detect endianness at decoding time. The encoding of "\t" would be suitable
+// for this as would many others :-)
+
 static void
-ws_encode(uint8_t c, uint8_t * restrict out)
+ws_encode(uint8_t c, uint8_t* restrict out)
 {
     out[0] = half_nibble_to_ws((c >> 6) & 3);
     out[1] = half_nibble_to_ws((c >> 4) & 3);
