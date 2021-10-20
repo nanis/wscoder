@@ -71,8 +71,6 @@ This corresponds to about 19% improvement in time and 23% improvement in through
 
 ```text
 TimeThis :  Command Line :  wse < test.data | wsd >NUL
-TimeThis :    Start Time :  Wed Oct 20 11:10:26 2021
-TimeThis :      End Time :  Wed Oct 20 11:10:29 2021
 TimeThis :  Elapsed Time :  00:00:03.009
 ```
 we see that it now executes about 6% slower presumably because we are running four threads on a dual-core machine. Regardless, with an encoder/decoder combination, the common use case is *NOT* to run a round-trip pipeline, so I am OK with that.
