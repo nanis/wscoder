@@ -1,5 +1,5 @@
 wsd.exe: src\wsd.c
 	cl -O2 -favor:INTEL64 -Qpar src\wsd.c -Fe:wsd.exe
 
-wse.exe: src\wse.c
-	cl -O2 -favor:INTEL64 -Qpar src\wse.c -Fe:wse.exe
+wse.exe: src\wse.cpp
+	cl -std:c++14 -O2 -favor:INTEL64 -Qpar src\wse.cpp -Fe:wse.exe

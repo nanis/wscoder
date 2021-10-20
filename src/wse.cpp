@@ -1,28 +1,17 @@
-#ifdef __STDC_NO_THREADS__
-#error Need support for C11 threading https://en.cppreference.com/w/c/thread
-#endif
-
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <threads.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <thread>
 
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #endif
 
-#define INPUT_BUFSIZE (1 * 1024 * 1024)
-#define OUTPUT_BUFSIZE (4 * INPUT_BUFSIZE)
-
-#define BASE_CHR ((uint8_t)'\t')
-
-struct encoder_arg
-{
-    uint8_t* bufin;
-    uint8_t* bufout;
-    size_t limit;
-}
+constexpr size_t DECODED_BUFSIZE = 1 * 1024 * 1024;
+constexpr size_t ENCODED_BUFSIZE = 4 * DECODED_BUFSIZE;
+constexpr size_t NUM_THREADS = 2;
+constexpr uint8_t BASE_CHR = static_cast<uint8_t>('\t');
 
 #if 0
 
@@ -58,7 +47,7 @@ half_nibble_to_ws(uint8_t c)
 // for this as would many others :-)
 
 static void
-ws_encode(uint8_t c, uint8_t* restrict out)
+ws_encode(const uint8_t& c, uint8_t* out)
 {
     out[0] = half_nibble_to_ws((c >> 6) & 3);
     out[1] = half_nibble_to_ws((c >> 4) & 3);
@@ -81,47 +70,37 @@ alloc_with_fail(size_t sz, const char* purpose)
 }
 
 static void
-encode_buffer_interleaved(void *arg)
+encode_buffer_interleaved(
+        const std::uint8_t * const bufin,
+        std::uint8_t * bufout,
+        const size_t limit
+        )
 {
-    const struct encoder_arg *argp = arg;
-
-    for (size_t i = 0; i < argp.limit; i += 2) {
-        ws_encode(argp.bufin[i], argp.bufout + 4 * i);
+    for (size_t i = 0; i < limit; i += 2) {
+        ws_encode(bufin[i], bufout + 4 * i);
     }
 }
 
-static void encode_stream(FILE* fin, FILE* fout)
+static void
+encode_stream(FILE* fin, FILE* fout)
 {
-    uint8_t* bufin = alloc_with_fail(INPUT_BUFSIZE, "input buffer");
-    uint8_t* bufout = alloc_with_fail(OUTPUT_BUFSIZE, "output buffer");
+    uint8_t* bufin = (uint8_t*)alloc_with_fail(DECODED_BUFSIZE, "input buffer");
+
+    uint8_t* bufout =
+      (uint8_t*)alloc_with_fail(ENCODED_BUFSIZE, "output buffer");
+
+    std::thread encoders[NUM_THREADS];
 
     size_t n;
 
-    while ((n = fread(bufin, 1, INPUT_BUFSIZE, fin))) {
-        struct encoder_arg args[] {
-            { bufin, bufout, n },
-            { bufin + 1, bufout + 4, n },
-        };
-
-        thrd_t encoder_threads[sizeof(args)/sizeof(args[0])];
-
-        for (size_t i = 0; i < sizeof(args)/sizeof(args[0]); ++i) {
-            int status = thread_create(
-              encoder_threads + i, encode_buffer_interleaved, args + i);
-            if (status != thrd_success) {
-                fprintf(stderr, "Failed to create thread %zu\n", i);
-                perror("Error creating thread");
-                exit(EXIT_FAILURE);
-            }
+    while ((n = fread(bufin, 1, DECODED_BUFSIZE, fin))) {
+        for (auto i = 0; i < NUM_THREADS; ++i) {
+            encoders[i] = std::thread(
+              encode_buffer_interleaved, bufin + i, bufout + 4 * i, n);
         }
 
-        for (size_t i = 0; i < sizeof(args) / sizeof(args[0]); ++i) {
-            int status = thread_join(threads[i], NULL);
-            if (status != thrd_success) {
-                fprintf(stderr, "Failed to join thread %zu\n", i);
-                perror("Error joining thread");
-                exit(EXIT_FAILURE);
-            }
+        for (size_t i = 0; i < NUM_THREADS; ++i) {
+            encoders[i].join();
         }
 
         if (fout) {
