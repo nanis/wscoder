@@ -1,33 +1,30 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <thread>
 
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #endif
 
-#define INPUT_BUFSIZE (4 * 1024 * 1024)
-#define OUTPUT_BUFSIZE (INPUT_BUFSIZE / 4)
+#include "ws.hpp"
 
-#if 0
+// We want a function that maps:
 
-We want a function that maps:
+//              x |  y
+// -------------------
+//  9 (0000_1001) | 0
+// 10 (0000_1010) | 1
+// 13 (0000_1101) | 2
+// 32 (0010_0000) | 3
 
-             x |  y
--------------------
- 9 (0000_1001) | 0
-10 (0000_1010) | 1
-13 (0000_1101) | 2
-32 (0010_0000) | 3
-
-In integer arithmetic, x/10 gets us there but we have to pad the result when x
-== 13. Division is costly, so instead of dividing by 10, we multiply by
-ceil(64/10) = 7 and look at how many 64s are in the result. Using 7 (instead
-of, e.g., 13, 26, or 0x1999999a) means we can do it all with uint8_t values with
-no up/downcasting. Note 13 is the only x value for which !!(ws & 4) is 1.
-
-#endif
+// In integer arithmetic, x/10 gets us there but we have to pad the result when
+// x == 13. Division is costly, so instead of dividing by 10, we multiply by
+// ceil(64/10) = 7 and look at how many 64s are in the result. Using 7 (instead
+// of, e.g., 13, 26, or 0x1999999a) means we can do it all with uint8_t values
+// with no up/downcasting. Note 13 is the only x value for which !!(ws & 4) is
+// 1.
 
 static uint8_t
 ws_to_half_nibble(uint8_t ws)
@@ -57,16 +54,34 @@ alloc_with_fail(size_t sz, const char* purpose)
 }
 
 static void
+decode_buffer_interleaved(const uint8_t* const bufin,
+                          uint8_t* bufout,
+                          const size_t limit)
+{
+    for (size_t i = 0; i < limit; i += 4 * NUM_THREADS) {
+        bufout[i / 4] = ws_decode(bufin + i);
+    }
+}
+
+static void
 decode_stream(FILE* fin, FILE* fout)
 {
-    uint8_t* bufin = alloc_with_fail(INPUT_BUFSIZE, "input buffer");
-    uint8_t* bufout = alloc_with_fail(OUTPUT_BUFSIZE, "output buffer");
+    uint8_t* bufin = (uint8_t*)alloc_with_fail(ENCODED_BUFSIZE, "input buffer");
+    uint8_t* bufout =
+      (uint8_t*)alloc_with_fail(DECODED_BUFSIZE, "output buffer");
+
+    std::thread decoders[NUM_THREADS];
 
     size_t n;
 
-    while ((n = fread(bufin, 1, INPUT_BUFSIZE, fin))) {
-        for (size_t i = 0; i < n; i += 4) {
-            bufout[i / 4] = ws_decode(bufin + i);
+    while ((n = fread(bufin, 1, ENCODED_BUFSIZE, fin))) {
+        for (size_t i = 0; i < NUM_THREADS; ++i) {
+            decoders[i] = std::thread(
+              decode_buffer_interleaved, bufin + 4 * i, bufout + i, n);
+        }
+
+        for (auto& decoder : decoders) {
+            decoder.join();
         }
 
         if (fout) {
