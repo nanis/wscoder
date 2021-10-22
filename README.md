@@ -75,6 +75,21 @@ TimeThis :  Elapsed Time :  00:00:03.009
 ```
 we see that it now executes about 6% slower presumably because we are running four threads on a dual-core machine. Regardless, with an encoder/decoder combination, the common use case is *NOT* to run a round-trip pipeline, so I am OK with that.
 
+Eventually, decided the [a more straightforward optimization][8] mentioned on HN madethe most sense and I incorporated that along with the threads. With both in place, on the same T9900, I get:
+
+```text
+TimeThis :  Command Line :  wse < test.data > NUL
+TimeThis :  Elapsed Time :  00:00:00.933
+```
+and
+
+```text
+TimeThis :  Command Line :  wsd < test.encoded > NUL
+TimeThis :  Elapsed Time :  00:00:01.457
+```
+
+Roughly, these correspond to 1.6 GiB/s encoding and 1 GiB/s decoding performance.
+
 [1]: https://articles.foletta.org/post/a-tale-of-two-optimisations/
 
 [2]: https://articles.foletta.org/
@@ -88,3 +103,5 @@ we see that it now executes about 6% slower presumably because we are running fo
 [6]: https://www.nu42.com/2021/10/another-optimization-tale.html
 
 [7]: https://devblogs.microsoft.com/cppblog/c11-and-c17-standard-support-arriving-in-msvc/
+
+[8]: https://news.ycombinator.com/item?id=28859877
