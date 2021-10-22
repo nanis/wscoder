@@ -1,5 +1,30 @@
-wsd.exe: src\wsd.cpp src\ws.hpp
-	cl -DWS_NUM_THREADS=$(WS_NUM_THREADS) -std:c++14 -O2 -favor:INTEL64 -Qpar src\wsd.cpp -Fe:$@
+CC=cl -nologo
 
-wse.exe: src\wse.cpp src\ws.hpp
-	cl -DWS_NUM_THREADS=$(WS_NUM_THREADS) -std:c++14 -O2 -favor:INTEL64 -Qpar src\wse.cpp -Fe:$@
+LANG=-std:c++14 -EHsc
+
+OPTIMIZE=-O2 -favor:INTEL64 -Qpar
+
+all: wsd.exe wse.exe
+
+wsd.exe: src\wsd.cpp src\main.cpp src\ws.hpp
+	$(CC) \
+		-DWS_OPERATION=decode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			src\wsd.cpp \
+			src\main.cpp \
+		-Fe:$@
+
+wse.exe: src\wse.cpp src\main.cpp src\ws.hpp
+	$(CC) \
+		-DWS_OPERATION=encode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			src\wse.cpp \
+			src\main.cpp \
+		-Fe:$@
+
+clean:
+	@del /q/f *.exe > NUL
+	@del /q/f *.obj > NUL
+	@echo Done
