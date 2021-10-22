@@ -9,7 +9,8 @@
 static uint8_t
 ws_to_half_nibble(const uint8_t& ws)
 {
-    return ((7 * ws) >> 6) + !!(ws & 4);
+    static const uint64_t x = (3ULL << 46) | (2 << 8) | (1 << 2);
+    return (x >> (2 * (ws - '\t'))) & 3;
 }
 
 static uint8_t
