@@ -4,6 +4,8 @@ LANG=-std:c++14 -EHsc
 
 OPTIMIZE=-O2 -favor:INTEL64 -Qpar
 
+RM=@del /q/f
+
 all: wsd.exe wse.exe
 
 wsd.exe: src\wsd.cpp src\main.cpp src\ws.hpp
@@ -25,6 +27,6 @@ wse.exe: src\wse.cpp src\main.cpp src\ws.hpp
 		-Fe:$@
 
 clean:
-	@del /q/f *.exe > NUL
-	@del /q/f *.obj > NUL
+	$(RM) *.exe
+	$(RM) *.obj
 	@echo Done

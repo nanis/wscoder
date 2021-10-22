@@ -1,8 +1,29 @@
 all: wsd wse
 
-wsd: src/wsd.cpp src/ws.hpp
-	g++ -DWS_NUM_THREADS=$(WS_NUM_THREADS) -Wall -pedantic -O3 -std=c++11 -march=native $< -o $@
+CC=g++
 
-wse: src/wse.cpp src/ws.hpp
-	g++ -DWS_NUM_THREADS=$(WS_NUM_THREADS) -Wall -pedantic -O3 -std=c++11 -march=native $< -o $@
+LANG=-std=c++14 -Wall -pedantic
 
+OPTIMIZE=-O3 -march=native
+
+RM=rm -f
+
+wse: src/wse.cpp src/main.cpp src/ws.hpp
+	$(CC) \
+		-DWS_OPERATION=encode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			$< src/main.cpp -o $@
+
+
+wsd: src/wsd.cpp src/main.cpp src/ws.hpp
+	$(CC) \
+		-DWS_OPERATION=decode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			$< src/main.cpp -o $@
+
+clean:
+	$(RM) wsd
+	$(RM) wse
+	$(RM) *.o
