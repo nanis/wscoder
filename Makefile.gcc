@@ -1,8 +1,29 @@
 all: wsd wse
 
-wsd: src/wsd.c
-	gcc -Wall -O3 -march=native src/wsd.c -o wsd
+CC=g++
 
-wse: src/wse.c
-	gcc -Wall -O3 -march=native src/wse.c -o wse
+LANG=-std=c++14 -Wall -pedantic
 
+OPTIMIZE=-O3 -march=native
+
+RM=rm -f
+
+wse: src/wse.cpp src/main.cpp src/ws.hpp
+	$(CC) \
+		-DWS_OPERATION=encode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			$< src/main.cpp -o $@
+
+
+wsd: src/wsd.cpp src/main.cpp src/ws.hpp
+	$(CC) \
+		-DWS_OPERATION=decode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			$< src/main.cpp -o $@
+
+clean:
+	$(RM) wsd
+	$(RM) wse
+	$(RM) *.o

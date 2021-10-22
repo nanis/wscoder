@@ -1,5 +1,32 @@
-wsd.exe: src\wsd.c
-	cl -O2 -favor:INTEL64 -Qpar src\wsd.c -Fe:wsd.exe
+CC=cl -nologo
 
-wse.exe: src\wse.c
-	cl -O2 -favor:INTEL64 -Qpar src\wse.c -Fe:wse.exe
+LANG=-std:c++14 -EHsc
+
+OPTIMIZE=-O2 -favor:INTEL64 -Qpar
+
+RM=@del /q/f
+
+all: wsd.exe wse.exe
+
+wsd.exe: src\wsd.cpp src\main.cpp src\ws.hpp
+	$(CC) \
+		-DWS_OPERATION=decode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			src\wsd.cpp \
+			src\main.cpp \
+		-Fe:$@
+
+wse.exe: src\wse.cpp src\main.cpp src\ws.hpp
+	$(CC) \
+		-DWS_OPERATION=encode_stream \
+		$(LANG) \
+		$(OPTIMIZE) \
+			src\wse.cpp \
+			src\main.cpp \
+		-Fe:$@
+
+clean:
+	$(RM) *.exe
+	$(RM) *.obj
+	@echo Done
